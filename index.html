@@ -5,42 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Simulador de Vendas — Oficina Premium</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-<script>
-/* ╔══════════════════════════════════════════════════════════════╗
-   ║  CONFIGURAÇÃO DA OFICINA — edite aqui para personalizar      ║
-   ║  Este bloco é injetado em todos os prompts automaticamente   ║
-   ╚══════════════════════════════════════════════════════════════╝ */
-const oficina = {
-
-  nome: "Oficina Premium",
-
-  // O QUE A OFICINA FAZ (clientes podem pedir qualquer um destes)
-  faz: [
-    "Revisões gerais",
-    "Troca de itens de suspensão (amortecedores, buchas, pivôs, barras)",
-    "Manutenção de motores (correia dentada, bomba d'água, retífica parcial)",
-    "Problemas com sensores e módulos (diagnóstico, reparo, substituição)",
-    "Troca de óleo e filtros",
-    "Freios (pastilhas, discos, cilindros, fluido)",
-    "Embreagem",
-    "Câmbio manual",
-  ],
-
-  // O QUE A OFICINA NÃO FAZ (às vezes o cliente vai pedir para testar o atendente)
-  nao_faz: [
-    "Alinhamento e balanceamento",
-    "Ar condicionado (não instalamos, não fazemos manutenção)",
-    "Autoelétrica em geral (som, alarme, vidro elétrico, faróis)",
-  ],
-
-  // CONTEXTO EXTRA (dicas de cultura, diferenciais, etc.)
-  contexto_extra: `
-A oficina é reconhecida pela qualidade do serviço, transparência no orçamento e 
-ambiente limpo e organizado. Cobra um pouco mais que a média, mas entrega mais qualidade.
-Prazo médio de serviços: revisão simples 1 dia, serviços maiores combinados com o cliente.
-`,
-};
-</script>
+<!-- ═══════════════════════════════════════════════════════════════
+     CONFIGURAÇÃO DA OFICINA
+     Carregada do arquivo oficina.js (edite lá, não aqui).
+     ═══════════════════════════════════════════════════════════════ -->
+<script src="oficina.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════
@@ -635,16 +604,32 @@ async function enviar(){
 function buildContexto(){
   const faz = oficina.faz.map(s=>`  ✅ ${s}`).join("\n");
   const naoFaz = oficina.nao_faz.map(s=>`  ❌ ${s}`).join("\n");
+  const difs = (oficina.diferenciais||[]).map(s=>`  ⭐ ${s}`).join("\n");
   return `
 CONTEXTO DA OFICINA: "${oficina.nome}"
 
 O QUE ESTA OFICINA FAZ:
 ${faz}
 
-O QUE ESTA OFICINA NÃO FAZ:
+O QUE ESTA OFICINA NÃO FAZ (nunca preste esses serviços se perguntado):
 ${naoFaz}
-${oficina.contexto_extra}
-IMPORTANTE PARA O ROLEPLAY: Às vezes peça algo que a oficina NÃO faz (alinhamento, ar condicionado, autoelétrica) para testar como o atendente reage. Faça isso naturalmente, sem avisar. Quando o atendente explicar que não fazemos, reaja de forma coerente com seu perfil.
+
+DIFERENCIAIS DA OFICINA:
+${difs}
+
+PRAZO MÉDIO: ${oficina.prazo_medio||"Combinado com o cliente."}
+
+PAGAMENTO: ${oficina.pagamento||"Não informado."}
+
+OBSERVAÇÕES: ${oficina.observacoes||""}
+
+IMPORTANTE PARA O ROLEPLAY:
+- De vez em quando peça um serviço que a oficina NÃO faz. Faça isso naturalmente, sem avisar. Reaja conforme seu perfil ao ouvir a negativa.
+${(oficina.cenarios_teste||[]).length ? `
+- SITUAÇÕES DE TESTE que você deve provocar naturalmente durante a conversa (escolha 1 ou 2 conforme o momento):
+${(oficina.cenarios_teste||[]).map((c,i)=>`  ${i+1}. ${c.situacao} — espera-se que o atendente: ${c.resposta_esperada}`).join("\n")}
+
+Introduza essas situações de forma orgânica, como um cliente real faria. Nunca anuncie que é um teste.` : ""}
 `.trim();
 }
 
@@ -719,6 +704,8 @@ async function encerrar(){
 OFICINA: ${oficina.nome}
 SERVIÇOS QUE FAZ: ${oficina.faz.join(", ")}
 SERVIÇOS QUE NÃO FAZ: ${oficina.nao_faz.join(", ")}
+DIFERENCIAIS: ${(oficina.diferenciais||[]).join(", ")}
+POLÍTICA DE PREÇO: ${oficina.politica_preco||""}
 PERFIL DO CLIENTE: ${persona.nome} — ${persona.apelido} (${persona.tag}, dificuldade ${persona.dif}/5)
 COMPORTAMENTO ESPERADO DO CLIENTE: ${persona.sys}
 
@@ -842,7 +829,7 @@ async function enviarCoach(){
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
       body:JSON.stringify({model:"gpt-4o-mini",max_tokens:500,
-        messages:[{role:"system",content:`Coach de vendas da ${oficina.nome}. Faz: ${oficina.faz.join(", ")}. NÃO faz: ${oficina.nao_faz.join(", ")}. Português brasileiro. Prático e encorajador. Máx 4 frases.`},...coachHist]})
+        messages:[{role:"system",content:`Coach de vendas da ${oficina.nome}. Faz: ${oficina.faz.join(", ")}. NÃO faz: ${oficina.nao_faz.join(", ")}. Diferenciais: ${(oficina.diferenciais||[]).join(", ")}. Política de preço: ${oficina.politica_preco||""}. Português brasileiro. Prático e encorajador. Máx 4 frases.`},...coachHist]})
     });
     if(!res.ok)throw new Error(res.status);
     const data=await res.json();
