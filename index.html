@@ -258,6 +258,16 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
 .hchip-ok{color:#4ecb71;background:#0f2a0f;border:1px solid #4ecb7122;}
 .hchip-err{color:#e84b4b;background:#2a0f0f;border:1px solid #e84b4b22;}
 .hcard-arrow{color:var(--muted);font-size:16px;flex-shrink:0;margin-top:2px;}
+.hcard-pending{background:var(--surface);border:1px solid #e8b84b22;border-radius:12px;padding:16px 20px;cursor:pointer;transition:all .2s;display:flex;gap:16px;align-items:flex-start;}
+.hcard-pending:hover{border-color:#e8b84b44;transform:translateX(3px);}
+.hchip-pending{color:#e8b84b;background:#1a1500;border:1px solid #e8b84b33;}
+.pending-badge{font-size:9px;color:#e8b84b;background:#1a1500;border:1px solid #e8b84b33;border-radius:6px;padding:2px 8px;letter-spacing:1px;display:inline-block;}
+.pending-actions{display:flex;gap:6px;margin-top:10px;}
+.btn-continuar{background:#1a1500;border:1px solid #e8b84b44;border-radius:7px;padding:5px 12px;font-size:10px;cursor:pointer;font-family:inherit;color:#e8b84b;letter-spacing:1px;transition:all .2s;}
+.btn-continuar:hover{background:#2a2000;border-color:#e8b84b88;}
+.btn-descartar{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--muted);letter-spacing:1px;transition:all .2s;}
+.btn-descartar:hover{color:#e84b4b;border-color:#e84b4b44;}
+
 
 /* ── MODAL DETALHE ── */
 .modal-lg{max-width:720px;text-align:left;max-height:90vh;overflow-y:auto;}
@@ -311,12 +321,13 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
 <!-- MODAL SAIR DA PERSONA -->
 <div class="modal-overlay" id="modalSair">
   <div class="modal-box">
-    <div class="modal-icon">⚠️</div>
-    <div class="modal-title">Sair da Persona</div>
-    <div class="modal-sub">A conversa atual será perdida.<br/>Tem certeza que quer voltar à seleção?</div>
-    <div class="modal-btns">
-      <button class="mbtn-cancel" onclick="fecharModal('modalSair')">Continuar aqui</button>
-      <button class="mbtn-danger" onclick="confirmarSair()">Sair mesmo assim</button>
+    <div class="modal-icon">💬</div>
+    <div class="modal-title">O que fazer com esta conversa?</div>
+    <div class="modal-sub">Você pode salvar para continuar depois<br/>ou sair sem salvar.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="mbtn-confirm" onclick="salvarPendente()" style="width:100%;padding:12px">📌 Salvar para continuar depois</button>
+      <button class="mbtn-cancel" onclick="confirmarSair()" style="width:100%">🗑 Sair sem salvar</button>
+      <button class="mbtn-cancel" onclick="fecharModal('modalSair')" style="width:100%;margin-top:2px">← Voltar para a conversa</button>
     </div>
   </div>
 </div>
@@ -503,6 +514,24 @@ function salvarChave(){
   setTimeout(()=>{b.textContent="🔑 Trocar chave";b.style.color="";b.style.borderColor="";},2000);
 }
 function confirmarSair(){fecharModal("modalSair");hist=[];persona=null;show("selectionScreen");}
+
+function salvarPendente(){
+  if(!persona||!hist.length){fecharModal("modalSair");hist=[];persona=null;show("selectionScreen");return;}
+  const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
+  sessoes.unshift({
+    id:Date.now(),
+    date:new Date().toISOString(),
+    pendente:true,
+    persona:{emoji:persona.emoji,nome:persona.nome,apelido:persona.apelido,idade:persona.idade,tag:persona.tag,dif:persona.dif,cor:persona.cor,dest:persona.dest,isAI:persona.id===9999,sys:persona.sys||"",id:persona.id},
+    hist:[...hist],
+    coachHist:[],
+    eval:null
+  });
+  localStorage.setItem("hist_oficina",JSON.stringify(sessoes.slice(0,30)));
+  fecharModal("modalSair");
+  hist=[];persona=null;
+  show("selectionScreen");
+}
 document.querySelectorAll(".modal-overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("open");}));
 
 // GRID
@@ -851,9 +880,29 @@ function renderHistorico(){
     return;
   }
   el.innerHTML=`<div class="hist-grid">${sessoes.map(s=>{
-    const n=s.eval.nota||0;
-    const cor=n>=8?"#4ecb71":n>=6?"#e8a84b":"#e84b4b";
     const data=new Date(s.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+    const metaDots="●".repeat(s.persona.dif)+"○".repeat(5-s.persona.dif);
+
+    if(s.pendente){
+      const msgs=s.hist.filter(m=>!m.content.startsWith("[cliente")).length;
+      return `<div class="hcard-pending" onclick="">
+        <div class="hcard-av" style="background:${s.persona.cor};border:2px solid ${s.persona.dest}">${s.persona.emoji}</div>
+        <div class="hcard-body">
+          <div class="hcard-top">
+            <div class="hcard-nome">${s.persona.nome}, ${s.persona.apelido}${s.persona.isAI?" ✨":""}</div>
+            <span class="pending-badge">⏸ PAUSADA</span>
+          </div>
+          <div class="hcard-meta">${s.persona.tag} · ${metaDots} · ${data} · ${msgs} msg${msgs!==1?"s":""}</div>
+          <div class="pending-actions">
+            <button class="btn-continuar" onclick="event.stopPropagation();continuarPendente(${s.id})">▶ Continuar conversa</button>
+            <button class="btn-descartar" onclick="event.stopPropagation();descartarPendente(${s.id})">✕ Descartar</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const n=s.eval.nota||0;
+    const cor=n>=9?"#4ecb71":n>=7?"#a8e84b":n>=5?"#e8a84b":n>=3?"#e8694b":"#e84b4b";
     const chips=[
       ...(s.eval.acertos||[]).slice(0,1).map(a=>`<span class="hchip hchip-ok">✓ ${a.slice(0,30)}${a.length>30?"...":""}</span>`),
       ...(s.eval.erros||[]).slice(0,1).map(e=>`<span class="hchip hchip-err">✗ ${e.slice(0,30)}${e.length>30?"...":""}</span>`)
@@ -865,13 +914,51 @@ function renderHistorico(){
           <div class="hcard-nome">${s.persona.nome}, ${s.persona.apelido}${s.persona.isAI?" ✨":""}</div>
           <div class="hcard-nota" style="color:${cor}">${n}</div>
         </div>
-        <div class="hcard-meta">${s.persona.tag} · ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)} · ${data}</div>
+        <div class="hcard-meta">${s.persona.tag} · ${metaDots} · ${data}</div>
         <div class="hcard-resumo">${s.eval.resumo||""}</div>
         <div class="hcard-chips">${chips}</div>
       </div>
       <div class="hcard-arrow">›</div>
     </div>`;
   }).join("")}</div>`;
+}
+
+function continuarPendente(id){
+  const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
+  const s=sessoes.find(x=>x.id===id);
+  if(!s)return;
+  // Remove from history (it'll be re-saved when evaluated or paused again)
+  const restantes=sessoes.filter(x=>x.id!==id);
+  localStorage.setItem("hist_oficina",JSON.stringify(restantes));
+  // Restore persona and hist
+  const p=s.persona;
+  p.id=p.id||9999;
+  persona=p;
+  hist=[...s.hist];
+  // Re-render the chat
+  show("chatScreen");
+  const av=document.getElementById("chatAv");
+  av.textContent=persona.emoji;av.style.background=persona.cor;av.style.borderColor=persona.dest;
+  document.getElementById("chatNm").textContent=`${persona.nome}, ${persona.apelido}`;
+  document.getElementById("chatDs").textContent=`${persona.idade||""} · ${persona.tag} · ${"●".repeat(persona.dif)}${"○".repeat(5-persona.dif)}${persona.isAI?" · ✨ IA":""}`;
+  const el=document.getElementById("messages");
+  el.innerHTML=`<div class="ai-hint" style="border-color:#e8b84b22">▶ Conversa retomada — <strong>${persona.nome}</strong><br/>Continue de onde parou ou clique em <strong>⚑ Avaliar</strong> quando terminar.</div>`;
+  hist.filter(m=>!m.content.startsWith("[cliente")).forEach(m=>{
+    const hora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    if(m.role==="user"){
+      el.innerHTML+=`<div class="msg user"><div class="msg-av" style="background:#1a1500;border:1px solid #e8b84b44">🧑</div><div><div class="bubble">${m.content}</div><div class="msg-time">${hora}</div></div></div>`;
+    } else {
+      el.innerHTML+=`<div class="msg"><div class="msg-av" style="background:${persona.cor}">${persona.emoji}</div><div><div class="bubble">${m.content}</div><div class="msg-time">${hora}</div></div></div>`;
+    }
+  });
+  el.scrollTop=99999;
+}
+
+function descartarPendente(id){
+  if(!confirm("Descartar esta conversa pausada?"))return;
+  const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
+  localStorage.setItem("hist_oficina",JSON.stringify(sessoes.filter(x=>x.id!==id)));
+  renderHistorico();
 }
 
 let sessaoAtual=null;
