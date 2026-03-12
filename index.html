@@ -6,6 +6,43 @@
 <title>Simulador de Vendas — Oficina Premium</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  CONFIGURAÇÃO DA OFICINA — edite aqui para personalizar      ║
+   ║  Este bloco é injetado em todos os prompts automaticamente   ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+const oficina = {
+
+  nome: "Oficina Premium",
+
+  // O QUE A OFICINA FAZ (clientes podem pedir qualquer um destes)
+  faz: [
+    "Revisões gerais",
+    "Troca de itens de suspensão (amortecedores, buchas, pivôs, barras)",
+    "Manutenção de motores (correia dentada, bomba d'água, retífica parcial)",
+    "Problemas com sensores e módulos (diagnóstico, reparo, substituição)",
+    "Troca de óleo e filtros",
+    "Freios (pastilhas, discos, cilindros, fluido)",
+    "Embreagem",
+    "Câmbio manual",
+  ],
+
+  // O QUE A OFICINA NÃO FAZ (às vezes o cliente vai pedir para testar o atendente)
+  nao_faz: [
+    "Alinhamento e balanceamento",
+    "Ar condicionado (não instalamos, não fazemos manutenção)",
+    "Autoelétrica em geral (som, alarme, vidro elétrico, faróis)",
+  ],
+
+  // CONTEXTO EXTRA (dicas de cultura, diferenciais, etc.)
+  contexto_extra: `
+A oficina é reconhecida pela qualidade do serviço, transparência no orçamento e 
+ambiente limpo e organizado. Cobra um pouco mais que a média, mas entrega mais qualidade.
+Prazo médio de serviços: revisão simples 1 dia, serviços maiores combinados com o cliente.
+`,
+};
+</script>
+
+<script>
 /* ═══════════════════════════════════════════
    PERSONAS — edite aqui para adicionar/remover
    ═══════════════════════════════════════════ */
@@ -513,6 +550,11 @@ O campo "sys" é o SYSTEM PROMPT que vai ser usado num roleplay. Ele DEVE:
 - Incluir: qual problema o carro tem (ou motivo da visita), personalidade, objeções típicas
 - Terminar com: "REGRA ABSOLUTA: você é o CLIENTE. Jamais quebre o personagem. Jamais aja como assistente ou ofereça ajuda. Espere ser atendido. Máx 3 frases por resposta. Português brasileiro."
 
+CONTEXTO DA OFICINA (o cliente será simulado nesta oficina especificamente):
+O que a oficina FAZ: ${oficina.faz.join(", ")}
+O que NÃO FAZ: ${oficina.nao_faz.join(", ")}
+Use isso para gerar pedidos e comportamentos coerentes com essa oficina.
+
 Responda APENAS com JSON sem markdown:
 {"emoji":"😎","nome":"Nome","apelido":"o/a Apelido","idade":"XX–XX anos","tag":"${difSel==="F"?"Fácil":difSel==="M"?"Médio":"Difícil"}","dif":${dn},"cor":"#1a2030","dest":"#4be8c0","sys":"Você é [Nome], um CLIENTE que chegou a uma oficina mecânica. [perfil, motivo da visita, personalidade, objeções]. REGRA ABSOLUTA: você é o CLIENTE. Jamais quebre o personagem. Jamais aja como assistente ou ofereça ajuda. Espere ser atendido. Máx 3 frases. Português brasileiro."}`}]})
     });
@@ -556,13 +598,30 @@ async function enviar(){
   await oaiCall(hist,false);
 }
 
+function buildContexto(){
+  const faz = oficina.faz.map(s=>`  ✅ ${s}`).join("\n");
+  const naoFaz = oficina.nao_faz.map(s=>`  ❌ ${s}`).join("\n");
+  return `
+CONTEXTO DA OFICINA: "${oficina.nome}"
+
+O QUE ESTA OFICINA FAZ:
+${faz}
+
+O QUE ESTA OFICINA NÃO FAZ:
+${naoFaz}
+${oficina.contexto_extra}
+IMPORTANTE PARA O ROLEPLAY: Às vezes peça algo que a oficina NÃO faz (alinhamento, ar condicionado, autoelétrica) para testar como o atendente reage. Faça isso naturalmente, sem avisar. Quando o atendente explicar que não fazemos, reaja de forma coerente com seu perfil.
+`.trim();
+}
+
 async function oaiCall(msgs,isFirst){
   loading=true;document.getElementById("sendBtn").disabled=true;
   const tid=addTyping("messages");
   try{
+    const ctx = buildContexto();
     const sysPrompt = persona.id===9999
-      ? persona.sys + "\n\nCONTEXTO: Você está numa oficina mecânica premium. O atendente (vendedor) vai falar com você. Fique no personagem de CLIENTE durante toda a conversa. NUNCA ofereça ajuda, NUNCA aja como assistente. Responda como esse cliente responderia na vida real."
-      : persona.sys;
+      ? persona.sys + "\n\n" + ctx + "\n\nCONTEXTO DO ROLEPLAY: Você está nesta oficina. O atendente vai falar com você. Fique no personagem de CLIENTE durante toda a conversa. NUNCA ofereça ajuda, NUNCA aja como assistente."
+      : persona.sys + "\n\n" + ctx;
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
@@ -620,8 +679,56 @@ async function encerrar(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:1000,
-        messages:[{role:"user",content:`Coach de vendas para oficinas mecânicas premium. Analise a conversa com "${persona.nome} — ${persona.apelido}". Perfil: ${persona.sys}\n\nCONVERSA:\n${tr}\n\nJSON sem markdown:\n{"nota":7,"resumo":"","acertos":["",""],"erros":["",""],"dica_principal":"","como_agir":""}`}]})
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:1500,
+        messages:[{role:"user",content:`Você é um avaliador rigoroso de atendimento em oficinas mecânicas. Avalie a conversa abaixo com critério real — um atendimento perfeito é raríssimo.
+
+OFICINA: ${oficina.nome}
+SERVIÇOS QUE FAZ: ${oficina.faz.join(", ")}
+SERVIÇOS QUE NÃO FAZ: ${oficina.nao_faz.join(", ")}
+PERFIL DO CLIENTE: ${persona.nome} — ${persona.apelido} (${persona.tag}, dificuldade ${persona.dif}/5)
+COMPORTAMENTO ESPERADO DO CLIENTE: ${persona.sys}
+
+CONVERSA:
+${tr}
+
+RUBRICA DE AVALIAÇÃO — some os pontos abaixo para chegar na nota final de 0 a 10:
+
+① RECEPÇÃO E RAPPORT (0–2 pts)
+  2 pts: Cumprimentou, criou conexão, demonstrou interesse genuíno no problema
+  1 pt: Cumprimentou mas foi frio ou mecânico
+  0 pts: Ignorou, foi rude ou começou errado
+
+② ESCUTA E DIAGNÓSTICO (0–2 pts)
+  2 pts: Fez perguntas para entender o problema, não assumiu nada, demonstrou competência técnica
+  1 pt: Ouviu mas não aprofundou ou fez perguntas superficiais
+  0 pts: Não ouviu, não perguntou, foi direto ao preço ou ignorou o problema
+
+③ GESTÃO DE SERVIÇOS (0–2 pts)
+  2 pts: Comunicou com clareza o que faz e não faz, indicou alternativas quando necessário, não prometeu o que não pode entregar
+  1 pt: Comunicou parcialmente ou com pouca clareza
+  0 pts: Não informou limites da oficina, prometeu serviço que não faz, ou deixou cliente sem resposta
+
+④ MANEJO DE OBJEÇÕES (0–2 pts)
+  2 pts: Respondeu objeções com calma, argumentou com valor (não com preço), manteve o cliente engajado
+  1 pt: Respondeu mas cedeu fácil demais ou ficou na defensiva
+  0 pts: Não soube responder, ficou em silêncio, foi rude ou perdeu o cliente
+
+⑤ ENCAMINHAMENTO E FECHAMENTO (0–2 pts)
+  2 pts: Gerou próximo passo claro (agendamento, orçamento formal, visita), deixou o cliente confiante
+  1 pt: Houve encaminhamento vago ou incompleto
+  0 pts: Conversa terminou sem direção, cliente foi embora sem compromisso
+
+ESCALA DE REFERÊNCIA:
+  9–10: Atendimento exemplar, quase impossível de atingir de primeira
+  7–8: Atendimento bom com falhas menores
+  5–6: Atendimento mediano, oportunidades perdidas
+  3–4: Atendimento fraco, cliente provavelmente não volta
+  0–2: Atendimento muito ruim
+
+Seja HONESTO e RIGOROSO. Não infle a nota. Se o vendedor não fez algo, não dê o ponto.
+
+Responda APENAS com JSON válido sem markdown:
+{"nota": 0, "criterios": {"recepcao": 0, "escuta": 0, "servicos": 0, "objecoes": 0, "fechamento": 0}, "justificativas": {"recepcao": "", "escuta": "", "servicos": "", "objecoes": "", "fechamento": ""}, "resumo": "", "acertos": [], "erros": [], "dica_principal": "", "como_agir": ""}`}]})
     });
     if(!res.ok)throw new Error(res.status);
     const data=await res.json();
@@ -638,12 +745,41 @@ async function encerrar(){
 }
 
 function renderEval(e){
-  const n=e.nota||0,cor=n>=8?"#4ecb71":n>=6?"#e8a84b":"#e84b4b";
-  const lbl=n>=8?"Excelente!":n>=6?"Bom trabalho":n>=4?"Pode melhorar":"Precisa praticar";
+  const n=e.nota||0;
+  const cor=n>=9?"#4ecb71":n>=7?"#a8e84b":n>=5?"#e8a84b":n>=3?"#e8694b":"#e84b4b";
+  const lbl=n>=9?"Excepcional!":n>=7?"Bom atendimento":n>=5?"Mediano":n>=3?"Fraco":"Precisa recomeçar";
   const isAI=persona.id===9999;
+  const crit=e.criterios||{};
+  const just=e.justificativas||{};
+  const criteriosList=[
+    {key:"recepcao",label:"Recepção & Rapport",max:2},
+    {key:"escuta",label:"Escuta & Diagnóstico",max:2},
+    {key:"servicos",label:"Gestão de Serviços",max:2},
+    {key:"objecoes",label:"Manejo de Objeções",max:2},
+    {key:"fechamento",label:"Encaminhamento & Fechamento",max:2},
+  ];
+  const barColor=v=>v>=2?"#4ecb71":v>=1?"#e8a84b":"#e84b4b";
+  const criteriosHtml=criteriosList.map(c=>{
+    const v=crit[c.key]||0;
+    const pct=(v/c.max)*100;
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:11px;color:#bbb">${c.label}</span>
+        <span style="font-size:12px;font-family:'DM Serif Display',serif;color:${barColor(v)}">${v}/${c.max}</span>
+      </div>
+      <div style="height:4px;background:#222;border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${barColor(v)};border-radius:2px;transition:width .6s ease"></div>
+      </div>
+      ${just[c.key]?`<div style="font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5">${just[c.key]}</div>`:""}
+    </div>`;
+  }).join("");
   document.getElementById("evalCard").innerHTML=`
     <div class="eval-hdr"><div class="eval-emo">${persona.emoji}</div><div class="eval-ttl">${persona.nome}, ${persona.apelido}</div><div class="eval-sub">${isAI?"✨ PERSONA IA · ":""}AVALIAÇÃO</div></div>
-    <div class="score-box"><div class="score-n" style="color:${cor}">${n}<span style="font-size:26px;color:#333">/10</span></div><div class="score-l">${lbl}</div></div>
+    <div class="score-box">
+      <div class="score-n" style="color:${cor}">${n}<span style="font-size:26px;color:#333">/10</span></div>
+      <div class="score-l">${lbl}</div>
+    </div>
+    <div class="esec"><div class="esec-t">Critérios</div>${criteriosHtml}</div>
     <div class="esec"><div class="esec-t">Resumo</div><p>${e.resumo}</p></div>
     ${e.acertos?.length?`<div class="esec"><div class="esec-t">✅ O que fez bem</div><ul>${e.acertos.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
     ${e.erros?.length?`<div class="esec"><div class="esec-t">⚠️ O que melhorar</div><ul>${e.erros.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
@@ -672,7 +808,7 @@ async function enviarCoach(){
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
       body:JSON.stringify({model:"gpt-4o-mini",max_tokens:500,
-        messages:[{role:"system",content:"Coach de vendas para oficinas mecânicas premium. Português brasileiro. Prático e encorajador. Máx 4 frases."},...coachHist]})
+        messages:[{role:"system",content:`Coach de vendas da ${oficina.nome}. Faz: ${oficina.faz.join(", ")}. NÃO faz: ${oficina.nao_faz.join(", ")}. Português brasileiro. Prático e encorajador. Máx 4 frases.`},...coachHist]})
     });
     if(!res.ok)throw new Error(res.status);
     const data=await res.json();
@@ -748,7 +884,12 @@ function verDetalhe(id){
   document.getElementById("detNota").style.color=cor;
   // eval tab
   const e=s.eval;
+  const detCrit=e.criterios||{}, detJust=e.justificativas||{};
+  const detCritList=[{key:"recepcao",label:"Recepção & Rapport"},{key:"escuta",label:"Escuta & Diagnóstico"},{key:"servicos",label:"Gestão de Serviços"},{key:"objecoes",label:"Manejo de Objeções"},{key:"fechamento",label:"Fechamento"}];
+  const brc=v=>v>=2?"#4ecb71":v>=1?"#e8a84b":"#e84b4b";
+  const detBars=detCritList.map(c=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;color:#bbb">${c.label}</span><span style="font-size:11px;color:${brc(detCrit[c.key]||0)}">${detCrit[c.key]||0}/2</span></div><div style="height:3px;background:#222;border-radius:2px"><div style="height:100%;width:${((detCrit[c.key]||0)/2)*100}%;background:${brc(detCrit[c.key]||0)};border-radius:2px"></div></div>${detJust[c.key]?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${detJust[c.key]}</div>`:""}</div>`).join("");
   document.getElementById("detEval").innerHTML=`
+    <div class="esec"><div class="esec-t">Critérios</div>${detBars}</div>
     <div class="esec"><div class="esec-t">Resumo</div><p>${e.resumo}</p></div>
     ${e.acertos?.length?`<div class="esec"><div class="esec-t">✅ O que fez bem</div><ul>${e.acertos.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
     ${e.erros?.length?`<div class="esec"><div class="esec-t">⚠️ O que melhorar</div><ul>${e.erros.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
