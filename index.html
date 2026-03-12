@@ -198,6 +198,57 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
 .spinner{width:30px;height:30px;border:2px solid #222;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:700px){.eval-body{flex-direction:column;}.coach-panel{max-width:100%;height:420px;position:static;}.hdr-acts{gap:4px;}.btn-back,.btn-exp,.btn-end{font-size:10px;padding:6px 8px;}}
+
+/* ── HISTÓRICO ── */
+.hist-section{max-width:900px;width:100%;margin-top:40px;padding-bottom:60px;}
+.hist-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.hist-title{font-size:10px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;}
+.hist-clear{background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;font-family:inherit;letter-spacing:1px;padding:4px 8px;border-radius:6px;transition:color .2s;}
+.hist-clear:hover{color:#e84b4b;}
+.hist-empty{text-align:center;padding:32px;font-size:11px;color:var(--muted);letter-spacing:1px;border:1px dashed var(--border);border-radius:12px;}
+.hist-grid{display:flex;flex-direction:column;gap:10px;}
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;cursor:pointer;transition:all .2s;display:flex;gap:16px;align-items:flex-start;}
+.hcard:hover{border-color:#333;transform:translateX(3px);}
+.hcard-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.hcard-body{flex:1;min-width:0;}
+.hcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;}
+.hcard-nome{font-size:13px;font-family:'DM Serif Display',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hcard-nota{font-size:20px;font-family:'DM Serif Display',serif;flex-shrink:0;line-height:1;}
+.hcard-meta{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;}
+.hcard-resumo{font-size:11px;color:#999;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.hcard-chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.hchip{font-size:9px;padding:2px 8px;border-radius:6px;letter-spacing:1px;}
+.hchip-ok{color:#4ecb71;background:#0f2a0f;border:1px solid #4ecb7122;}
+.hchip-err{color:#e84b4b;background:#2a0f0f;border:1px solid #e84b4b22;}
+.hcard-arrow{color:var(--muted);font-size:16px;flex-shrink:0;margin-top:2px;}
+
+/* ── MODAL DETALHE ── */
+.modal-lg{max-width:720px;text-align:left;max-height:90vh;overflow-y:auto;}
+.modal-lg::-webkit-scrollbar{width:4px;}
+.modal-lg::-webkit-scrollbar-thumb{background:#222;border-radius:2px;}
+.det-hdr{display:flex;gap:14px;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.det-av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.det-info{flex:1;}
+.det-nome{font-family:'DM Serif Display',serif;font-size:18px;}
+.det-meta{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:3px;}
+.det-nota{font-family:'DM Serif Display',serif;font-size:40px;line-height:1;}
+.det-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);}
+.dtab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 16px;font-size:11px;cursor:pointer;font-family:inherit;color:var(--muted);letter-spacing:1px;transition:all .2s;text-transform:uppercase;margin-bottom:-1px;}
+.dtab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.det-panel{display:none;}.det-panel.on{display:block;}
+.det-conv{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;padding-right:4px;}
+.det-conv::-webkit-scrollbar{width:3px;}
+.det-conv::-webkit-scrollbar-thumb{background:#222;border-radius:2px;}
+.dmsg{display:flex;gap:8px;max-width:85%;}
+.dmsg.du{align-self:flex-end;flex-direction:row-reverse;}
+.dav{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);}
+.dbub{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.6;color:#ccc;}
+.dmsg.du .dbub{background:#161200;border-color:#e8b84b22;color:#f0e8d0;}
+.det-coach{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;padding-right:4px;}
+.det-coach::-webkit-scrollbar{width:3px;}
+.det-coach::-webkit-scrollbar-thumb{background:#222;border-radius:2px;}
+.modal-close{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:11px;cursor:pointer;font-family:inherit;color:var(--muted);letter-spacing:1px;transition:all .2s;text-transform:uppercase;margin-top:16px;}
+.modal-close:hover{color:var(--text);border-color:#444;}
 </style>
 </head>
 <body>
@@ -264,6 +315,29 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
   </div>
 </div>
 
+<!-- MODAL DETALHE HISTÓRICO -->
+<div class="modal-overlay" id="modalDetalhe">
+  <div class="modal-box modal-lg">
+    <div class="det-hdr">
+      <div class="det-av" id="detAv"></div>
+      <div class="det-info">
+        <div class="det-nome" id="detNome"></div>
+        <div class="det-meta" id="detMeta"></div>
+      </div>
+      <div class="det-nota" id="detNota"></div>
+    </div>
+    <div class="det-tabs">
+      <button class="dtab on" onclick="detTab('eval')">📊 Avaliação</button>
+      <button class="dtab" onclick="detTab('conv')">💬 Conversa</button>
+      <button class="dtab" onclick="detTab('coach')">🎓 Coach</button>
+    </div>
+    <div class="det-panel on" id="detEval"></div>
+    <div class="det-panel" id="detConv"></div>
+    <div class="det-panel" id="detCoach"></div>
+    <button class="modal-close" onclick="fecharModal('modalDetalhe')">Fechar</button>
+  </div>
+</div>
+
 <!-- TELA 0: CHAVE -->
 <div id="keyScreen">
   <div class="key-card">
@@ -298,6 +372,14 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
     <button class="fbtn" onclick="filtrar('Difícil',this)">🔴 Difícil</button>
   </div>
   <div class="grid" id="personaGrid"></div>
+
+  <div class="hist-section" id="histSection">
+    <div class="hist-hdr">
+      <div class="hist-title">📋 Histórico de Treinos</div>
+      <button class="hist-clear" onclick="limparHistorico()">Limpar tudo</button>
+    </div>
+    <div id="histList"></div>
+  </div>
 </div>
 
 <!-- TELA 2: CHAT -->
@@ -361,7 +443,7 @@ function entrar(){
   if(!v.startsWith("sk-")){document.getElementById("keyErr").style.display="block";return;}
   apiKey=v;localStorage.setItem("ak_oai",v);show("selectionScreen");renderGrid();
 }
-window.onload=()=>{const s=localStorage.getItem("ak_oai");if(s&&s.startsWith("sk-")){apiKey=s;show("selectionScreen");renderGrid();}};
+window.onload=()=>{const s=localStorage.getItem("ak_oai");if(s&&s.startsWith("sk-")){apiKey=s;show("selectionScreen");renderGrid();renderHistorico();}};
 
 // MODAIS
 function abrirModal(id){document.getElementById(id).classList.add("open");}
@@ -424,10 +506,10 @@ async function gerarIA(){
       body:JSON.stringify({model:"gpt-4o-mini",max_tokens:700,
         messages:[{role:"user",content:`Crie uma persona INÉDITA e CRIATIVA de cliente para uma oficina mecânica premium brasileira.
 Nível de dificuldade: ${dl}
-Seja criativo — evite os clichês comuns. Pense em perfis inusitados mas realistas.
+Seja muito criativo — evite os clichês comuns. Pense em perfis inusitados mas realistas.
 
 Responda APENAS com JSON sem markdown:
-{"emoji":"😎","nome":"Nome","apelido":"o/a Apelido","idade":"XX–XX anos","tag":"${difSel==="F"?"Fácil":difSel==="M"?"Médio":"Difícil"}","dif":${dn},"cor":"#1a2030","dest":"#4be8c0","sys":"Você é [Nome], [perfil detalhado]. PERSONALIDADE: [3 traços]. DORES: [2-3 dores específicas]. COMPORTAMENTO: [como age na oficina]. OBJEÇÕES: [3 frases típicas entre aspas]. Responda em português brasileiro. Máx 3 frases por resposta. [instrução de comportamento adequada ao nível]"}`}]})
+{"emoji":"😎","nome":"Nome","apelido":"o/a Apelido","idade":"XX–XX anos","tag":"${difSel==="F"?"Fácil":difSel==="M"?"Médio":"Difícil"}","dif":${dn},"cor":"#1a2030","dest":"#4be8c0","sys":"Você é [Nome], [perfil detalhado]. PERSONALIDADE: [3 traços]. DORES: [2-3 dores específicas]. COMPORTAMENTO: [como age na oficina]. OBJEÇÕES: [2 frases típicas entre aspas]. Responda em português brasileiro. Máx 3 frases por resposta. [instrução de comportamento adequada ao nível]"}`}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||res.status);}
     const data=await res.json();
@@ -480,7 +562,7 @@ async function oaiCall(msgs,isFirst){
     const data=await res.json();
     const reply=data.choices?.[0]?.message?.content||"...";
     removeTyping(tid);addMsg(reply,"persona");
-    if(isFirst)hist.push({role:"user",content:"Envie uma mensagem de saudação como se você tivesse acabado de iniciar um atendimento por whatsapp ex: 'oi preciso de ajuda com um problema no meu carro', olá tudo bem, ou qualquer tipo de mensagem de saudação, seja criativo."});
+    if(isFirst)hist.push({role:"user",content:"Olá, pode me atender?"});
     hist.push({role:"assistant",content:reply});
   }catch(e){removeTyping(tid);addMsg(`⚠️ Erro: ${e.message}`,"persona");}
   loading=false;document.getElementById("sendBtn").disabled=false;
@@ -519,7 +601,7 @@ function dl(txt,nome){const a=document.createElement("a");a.href=URL.createObjec
 
 // AVALIAR
 async function encerrar(){
-  if(hist.length<1){alert("Converse um pouco antes!");return;}
+  if(hist.length<2){alert("Converse um pouco antes!");return;}
   show("evalScreen");evalData=null;coachHist=[];
   document.getElementById("evalCard").innerHTML=`<div class="loading-box"><div class="spinner"></div>Analisando conversa com ${persona.nome}...</div>`;
   document.getElementById("coachMsgs").innerHTML=`<div class="cmsg"><div class="cav">🎓</div><div class="cbub">Analisando... já pode me perguntar! 📋</div></div>`;
@@ -536,7 +618,7 @@ async function encerrar(){
     let txt=data.choices?.[0]?.message?.content||"{}";
     txt=txt.replace(/```json|```/g,"").trim();
     evalData=JSON.parse(txt);
-    renderEval(evalData);
+    renderEval(evalData);salvarHistorico();
     coachHist=[
       {role:"user",content:`Contexto coach: conversa com "${persona.nome}" (${persona.tag}, dif ${persona.dif}/5${persona.id===9999?", IA":""}).Perfil: ${persona.sys}. Transcrição: ${tr}. Avaliação: ${JSON.stringify(evalData)}. Responda em pt-BR de forma prática sobre vendas em oficina premium.`},
       {role:"assistant",content:`Analisei tudo! Nota: ${evalData.nota}/10. Me pergunte qualquer coisa! 💪`}
@@ -593,8 +675,108 @@ async function enviarCoach(){
   coachLoading=false;document.getElementById("coachSend").disabled=false;
 }
 
+
+// ── HISTÓRICO ─────────────────────────────────────────────────────────────────
+function salvarHistorico(){
+  if(!evalData||!persona)return;
+  const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
+  sessoes.unshift({
+    id:Date.now(),
+    date:new Date().toISOString(),
+    persona:{emoji:persona.emoji,nome:persona.nome,apelido:persona.apelido,tag:persona.tag,dif:persona.dif,cor:persona.cor,dest:persona.dest,isAI:persona.id===9999},
+    eval:evalData,
+    hist:[...hist],
+    coachHist:[...coachHist]
+  });
+  localStorage.setItem("hist_oficina",JSON.stringify(sessoes.slice(0,30)));
+  renderHistorico();
+}
+
+function renderHistorico(){
+  const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
+  const el=document.getElementById("histList");
+  if(!sessoes.length){
+    el.innerHTML=`<div class="hist-empty">Nenhum treino ainda.<br/>Converse com uma persona e avalie para aparecer aqui.</div>`;
+    return;
+  }
+  el.innerHTML=`<div class="hist-grid">${sessoes.map(s=>{
+    const n=s.eval.nota||0;
+    const cor=n>=8?"#4ecb71":n>=6?"#e8a84b":"#e84b4b";
+    const data=new Date(s.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+    const chips=[
+      ...(s.eval.acertos||[]).slice(0,1).map(a=>`<span class="hchip hchip-ok">✓ ${a.slice(0,30)}${a.length>30?"...":""}</span>`),
+      ...(s.eval.erros||[]).slice(0,1).map(e=>`<span class="hchip hchip-err">✗ ${e.slice(0,30)}${e.length>30?"...":""}</span>`)
+    ].join("");
+    return `<div class="hcard" onclick="verDetalhe(${s.id})">
+      <div class="hcard-av" style="background:${s.persona.cor};border:2px solid ${s.persona.dest}">${s.persona.emoji}</div>
+      <div class="hcard-body">
+        <div class="hcard-top">
+          <div class="hcard-nome">${s.persona.nome}, ${s.persona.apelido}${s.persona.isAI?" ✨":""}</div>
+          <div class="hcard-nota" style="color:${cor}">${n}</div>
+        </div>
+        <div class="hcard-meta">${s.persona.tag} · ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)} · ${data}</div>
+        <div class="hcard-resumo">${s.eval.resumo||""}</div>
+        <div class="hcard-chips">${chips}</div>
+      </div>
+      <div class="hcard-arrow">›</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+function verDetalhe(id){
+  const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
+  const s=sessoes.find(x=>x.id===id);
+  if(!s)return;
+  const n=s.eval.nota||0;
+  const cor=n>=8?"#4ecb71":n>=6?"#e8a84b":"#e84b4b";
+  const data=new Date(s.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  document.getElementById("detAv").textContent=s.persona.emoji;
+  document.getElementById("detAv").style.background=s.persona.cor;
+  document.getElementById("detNome").textContent=`${s.persona.nome}, ${s.persona.apelido}`;
+  document.getElementById("detMeta").textContent=`${s.persona.tag} · ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)} · ${data}`;
+  document.getElementById("detNota").textContent=n+"/10";
+  document.getElementById("detNota").style.color=cor;
+  // eval tab
+  const e=s.eval;
+  document.getElementById("detEval").innerHTML=`
+    <div class="esec"><div class="esec-t">Resumo</div><p>${e.resumo}</p></div>
+    ${e.acertos?.length?`<div class="esec"><div class="esec-t">✅ O que fez bem</div><ul>${e.acertos.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
+    ${e.erros?.length?`<div class="esec"><div class="esec-t">⚠️ O que melhorar</div><ul>${e.erros.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
+    <div class="esec"><div class="esec-t">💡 Dica principal</div><p>${e.dica_principal}</p></div>
+    <div class="esec"><div class="esec-t">🎯 Como agir com esse perfil</div><p>${e.como_agir}</p></div>`;
+  // conv tab
+  const convMsgs=(s.hist||[]).map(m=>m.role==="user"
+    ?`<div class="dmsg du"><div class="dav" style="background:#1a1500;border:1px solid #e8b84b44">🧑</div><div class="dbub">${m.content}</div></div>`
+    :`<div class="dmsg"><div class="dav" style="background:${s.persona.cor}">${s.persona.emoji}</div><div class="dbub">${m.content}</div></div>`
+  ).join("");
+  document.getElementById("detConv").innerHTML=`<div class="det-conv">${convMsgs||"<p style='color:var(--muted);font-size:11px'>Sem mensagens.</p>"}</div>`;
+  // coach tab
+  const coachMsgs=(s.coachHist||[]).filter(m=>m.role!=="user"||!m.content.startsWith("Contexto coach:")).map(m=>m.role==="user"
+    ?`<div class="dmsg du"><div class="dav" style="background:#1a1500;border:1px solid #e8b84b44">🧑</div><div class="dbub">${m.content}</div></div>`
+    :`<div class="dmsg"><div class="dav">🎓</div><div class="dbub">${m.content}</div></div>`
+  ).join("");
+  document.getElementById("detCoach").innerHTML=`<div class="det-coach">${coachMsgs||"<p style='color:var(--muted);font-size:11px'>Sem conversa com o coach.</p>"}</div>`;
+  // reset tab
+  document.querySelectorAll(".dtab").forEach((b,i)=>{b.classList.toggle("on",i===0);});
+  document.querySelectorAll(".det-panel").forEach((p,i)=>{p.classList.toggle("on",i===0);});
+  abrirModal("modalDetalhe");
+}
+
+function detTab(tab){
+  const map={eval:0,conv:1,coach:2};
+  const idx=map[tab];
+  document.querySelectorAll(".dtab").forEach((b,i)=>b.classList.toggle("on",i===idx));
+  document.querySelectorAll(".det-panel").forEach((p,i)=>p.classList.toggle("on",i===idx));
+}
+
+function limparHistorico(){
+  if(!confirm("Apagar todo o histórico de treinos?"))return;
+  localStorage.removeItem("hist_oficina");
+  renderHistorico();
+}
+
 // UTILS
-function show(id){["keyScreen","selectionScreen","chatScreen","evalScreen"].forEach(s=>document.getElementById(s).style.display="none");document.getElementById(id).style.display="flex";}
+function show(id){["keyScreen","selectionScreen","chatScreen","evalScreen"].forEach(s=>document.getElementById(s).style.display="none");document.getElementById(id).style.display="flex";if(id==="selectionScreen")renderHistorico();}
 function hkey(e,ctx){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ctx==="coach"?enviarCoach():enviar();}}
 function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px";}
 </script>
