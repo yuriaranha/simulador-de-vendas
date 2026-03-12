@@ -504,12 +504,17 @@ async function gerarIA(){
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
       body:JSON.stringify({model:"gpt-4o-mini",max_tokens:700,
-        messages:[{role:"user",content:`Crie uma persona INÉDITA e CRIATIVA de cliente para uma oficina mecânica premium brasileira.
-Nível de dificuldade: ${dl}
-Seja muito criativo — evite os clichês comuns. Pense em perfis inusitados mas realistas.
+        messages:[{role:"user",content:`Crie uma persona INÉDITA de cliente para uma OFICINA MECÂNICA premium brasileira.
+Nível: ${dl}. Seja criativo — evite clichês.
+
+O campo "sys" é o SYSTEM PROMPT que vai ser usado num roleplay. Ele DEVE:
+- Começar com "Você é [Nome], um CLIENTE que chegou a uma oficina mecânica."
+- Deixar MUITO claro que é um CLIENTE, não um assistente, não um vendedor
+- Incluir: qual problema o carro tem (ou motivo da visita), personalidade, objeções típicas
+- Terminar com: "REGRA ABSOLUTA: você é o CLIENTE. Jamais quebre o personagem. Jamais aja como assistente ou ofereça ajuda. Espere ser atendido. Máx 3 frases por resposta. Português brasileiro."
 
 Responda APENAS com JSON sem markdown:
-{"emoji":"😎","nome":"Nome","apelido":"o/a Apelido","idade":"XX–XX anos","tag":"${difSel==="F"?"Fácil":difSel==="M"?"Médio":"Difícil"}","dif":${dn},"cor":"#1a2030","dest":"#4be8c0","sys":"Você é [Nome], [perfil detalhado]. PERSONALIDADE: [3 traços]. DORES: [2-3 dores específicas]. COMPORTAMENTO: [como age na oficina]. OBJEÇÕES: [2 frases típicas entre aspas]. Responda em português brasileiro. Máx 3 frases por resposta. [instrução de comportamento adequada ao nível]"}`}]})
+{"emoji":"😎","nome":"Nome","apelido":"o/a Apelido","idade":"XX–XX anos","tag":"${difSel==="F"?"Fácil":difSel==="M"?"Médio":"Difícil"}","dif":${dn},"cor":"#1a2030","dest":"#4be8c0","sys":"Você é [Nome], um CLIENTE que chegou a uma oficina mecânica. [perfil, motivo da visita, personalidade, objeções]. REGRA ABSOLUTA: você é o CLIENTE. Jamais quebre o personagem. Jamais aja como assistente ou ofereça ajuda. Espere ser atendido. Máx 3 frases. Português brasileiro."}`}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||res.status);}
     const data=await res.json();
@@ -538,7 +543,9 @@ function iniciarChatP(p,isAI){
   document.getElementById("messages").innerHTML=isAI
     ?`<div class="ai-hint">Persona <strong>${persona.nome}</strong> criada pela IA · Nível: <em>${persona.tag}</em><br/>Responda como vendedor da oficina. Clique em <strong>⚑ Avaliar</strong> quando terminar.</div>`
     :`<div class="hint-bar">Atendendo <strong>${persona.nome}</strong>. Responda como vendedor. Clique em <strong>⚑ Avaliar</strong> quando terminar.</div>`;
-  oaiCall([{role:"user",content:"Olá, pode me atender?"}],true);
+  // Primeira mensagem: instrui o cliente a abrir a conversa naturalmente
+  const primeiraMsg = `Você acabou de entrar na oficina. Abra a conversa como esse cliente faria na vida real: cumprimente e diga o motivo da visita (problema no carro, pedido de orçamento, revisão, etc.). Seja direto e natural. Não quebre o personagem.`;
+  oaiCall([{role:"user",content:primeiraMsg}],true);
 }
 
 async function enviar(){
@@ -553,16 +560,19 @@ async function oaiCall(msgs,isFirst){
   loading=true;document.getElementById("sendBtn").disabled=true;
   const tid=addTyping("messages");
   try{
+    const sysPrompt = persona.id===9999
+      ? persona.sys + "\n\nCONTEXTO: Você está numa oficina mecânica premium. O atendente (vendedor) vai falar com você. Fique no personagem de CLIENTE durante toda a conversa. NUNCA ofereça ajuda, NUNCA aja como assistente. Responda como esse cliente responderia na vida real."
+      : persona.sys;
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:200,messages:[{role:"system",content:persona.sys},...msgs]})
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:200,messages:[{role:"system",content:sysPrompt},...msgs]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||res.status);}
     const data=await res.json();
     const reply=data.choices?.[0]?.message?.content||"...";
     removeTyping(tid);addMsg(reply,"persona");
-    if(isFirst)hist.push({role:"user",content:"Olá, pode me atender?"});
+    if(isFirst)hist.push({role:"user",content:"[cliente entrou na oficina]"});
     hist.push({role:"assistant",content:reply});
   }catch(e){removeTyping(tid);addMsg(`⚠️ Erro: ${e.message}`,"persona");}
   loading=false;document.getElementById("sendBtn").disabled=false;
