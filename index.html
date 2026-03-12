@@ -480,7 +480,7 @@ async function oaiCall(msgs,isFirst){
     const data=await res.json();
     const reply=data.choices?.[0]?.message?.content||"...";
     removeTyping(tid);addMsg(reply,"persona");
-    if(isFirst)hist.push({role:"user",content:"Atendimento inciado! envie uma mensagem de saudação que já iremos atende-lo"});
+    if(isFirst)hist.push({role:"user",content:"Envie uma mensagem de saudação como se você tivesse acabado de iniciar um atendimento por whatsapp ex: 'oi preciso de ajuda com um problema no meu carro', olá tudo bem, ou qualquer tipo de mensagem de saudação, seja criativo."});
     hist.push({role:"assistant",content:reply});
   }catch(e){removeTyping(tid);addMsg(`⚠️ Erro: ${e.message}`,"persona");}
   loading=false;document.getElementById("sendBtn").disabled=false;
