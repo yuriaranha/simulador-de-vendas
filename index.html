@@ -363,15 +363,20 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
       </div>
       <div class="det-nota" id="detNota"></div>
     </div>
-    <div class="det-tabs">
+    <div class="det-tabs" id="detTabs">
       <button class="dtab on" onclick="detTab('eval')">📊 Avaliação</button>
       <button class="dtab" onclick="detTab('conv')">💬 Conversa</button>
       <button class="dtab" onclick="detTab('coach')">🎓 Coach</button>
+      <button class="dtab" id="detTabPersona" style="display:none" onclick="detTab('persona')">🤖 Persona IA</button>
     </div>
     <div class="det-panel on" id="detEval"></div>
     <div class="det-panel" id="detConv"></div>
     <div class="det-panel" id="detCoach"></div>
-    <button class="modal-close" onclick="fecharModal('modalDetalhe')">Fechar</button>
+    <div class="det-panel" id="detPersona"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn-exp-eval" id="detBtnDownload" onclick="downloadRelatorioHist()" style="margin-bottom:0">⬇ Baixar Relatório</button>
+      <button class="modal-close" style="margin-top:0" onclick="fecharModal('modalDetalhe')">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -829,7 +834,7 @@ function salvarHistorico(){
   sessoes.unshift({
     id:Date.now(),
     date:new Date().toISOString(),
-    persona:{emoji:persona.emoji,nome:persona.nome,apelido:persona.apelido,tag:persona.tag,dif:persona.dif,cor:persona.cor,dest:persona.dest,isAI:persona.id===9999},
+    persona:{emoji:persona.emoji,nome:persona.nome,apelido:persona.apelido,idade:persona.idade,tag:persona.tag,dif:persona.dif,cor:persona.cor,dest:persona.dest,isAI:persona.id===9999,sys:persona.sys||""},
     eval:evalData,
     hist:[...hist],
     coachHist:[...coachHist]
@@ -869,17 +874,19 @@ function renderHistorico(){
   }).join("")}</div>`;
 }
 
+let sessaoAtual=null;
 function verDetalhe(id){
   const sessoes=JSON.parse(localStorage.getItem("hist_oficina")||"[]");
   const s=sessoes.find(x=>x.id===id);
   if(!s)return;
+  sessaoAtual=s;
   const n=s.eval.nota||0;
-  const cor=n>=8?"#4ecb71":n>=6?"#e8a84b":"#e84b4b";
+  const cor=n>=9?"#4ecb71":n>=7?"#a8e84b":n>=5?"#e8a84b":n>=3?"#e8694b":"#e84b4b";
   const data=new Date(s.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
   document.getElementById("detAv").textContent=s.persona.emoji;
   document.getElementById("detAv").style.background=s.persona.cor;
   document.getElementById("detNome").textContent=`${s.persona.nome}, ${s.persona.apelido}`;
-  document.getElementById("detMeta").textContent=`${s.persona.tag} · ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)} · ${data}`;
+  document.getElementById("detMeta").textContent=`${s.persona.tag} · ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)}${s.persona.isAI?" · ✨ IA":""} · ${data}`;
   document.getElementById("detNota").textContent=n+"/10";
   document.getElementById("detNota").style.color=cor;
   // eval tab
@@ -907,6 +914,26 @@ function verDetalhe(id){
     :`<div class="dmsg"><div class="dav">🎓</div><div class="dbub">${m.content}</div></div>`
   ).join("");
   document.getElementById("detCoach").innerHTML=`<div class="det-coach">${coachMsgs||"<p style='color:var(--muted);font-size:11px'>Sem conversa com o coach.</p>"}</div>`;
+  // persona IA tab
+  const tabPersonaBtn=document.getElementById("detTabPersona");
+  if(s.persona.isAI && s.persona.sys){
+    tabPersonaBtn.style.display="block";
+    const sysLines=s.persona.sys
+      .replace(/REGRA ABSOLUTA.*$/s,"").replace(/CONTEXTO DA OFICINA.*$/s,"").trim()
+      .split(/\. /).filter(Boolean).map(l=>l.trim()).filter(l=>l.length>10);
+    const sysFormatted=sysLines.map(l=>`<p style="font-size:12px;color:#bbb;line-height:1.7;margin-bottom:6px">${l}.</p>`).join("");
+    document.getElementById("detPersona").innerHTML=`
+      <div style="display:flex;gap:12px;align-items:center;padding:14px;background:linear-gradient(135deg,#0f0f1a,#1a1500);border:1px solid #e8b84b22;border-radius:10px;margin-bottom:16px">
+        <div style="font-size:32px">${s.persona.emoji}</div>
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--accent)">${s.persona.nome}, ${s.persona.apelido}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${s.persona.idade||""} · ${s.persona.tag} · ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)}</div>
+        </div>
+      </div>
+      <div class="esec"><div class="esec-t">Perfil gerado pela IA</div>${sysFormatted}</div>`;
+  } else {
+    tabPersonaBtn.style.display="none";
+  }
   // reset tab
   document.querySelectorAll(".dtab").forEach((b,i)=>{b.classList.toggle("on",i===0);});
   document.querySelectorAll(".det-panel").forEach((p,i)=>{p.classList.toggle("on",i===0);});
@@ -914,7 +941,7 @@ function verDetalhe(id){
 }
 
 function detTab(tab){
-  const map={eval:0,conv:1,coach:2};
+  const map={eval:0,conv:1,coach:2,persona:3};
   const idx=map[tab];
   document.querySelectorAll(".dtab").forEach((b,i)=>b.classList.toggle("on",i===idx));
   document.querySelectorAll(".det-panel").forEach((p,i)=>p.classList.toggle("on",i===idx));
@@ -924,6 +951,45 @@ function limparHistorico(){
   if(!confirm("Apagar todo o histórico de treinos?"))return;
   localStorage.removeItem("hist_oficina");
   renderHistorico();
+}
+
+function downloadRelatorioHist(){
+  if(!sessaoAtual)return;
+  const s=sessaoAtual;
+  const e=s.eval||{};
+  const data=new Date(s.date).toLocaleString("pt-BR");
+  const crit=e.criterios||{}, just=e.justificativas||{};
+  const critNomes={recepcao:"Recepção & Rapport",escuta:"Escuta & Diagnóstico",servicos:"Gestão de Serviços",objecoes:"Manejo de Objeções",fechamento:"Encaminhamento & Fechamento"};
+  const critLines=Object.entries(critNomes).map(([k,v])=>`  ${v}: ${crit[k]||0}/2${just[k]?" — "+just[k]:""}`).join("
+");
+  const linhas=[
+    `RELATÓRIO DE SIMULAÇÃO DE VENDAS — ${oficina.nome}`,
+    "═".repeat(58),
+    `Persona: ${s.persona.nome}, ${s.persona.apelido}${s.persona.isAI?" (✨ Gerada por IA)":""}`,
+    `Nível: ${s.persona.tag} | Dificuldade: ${"●".repeat(s.persona.dif)}${"○".repeat(5-s.persona.dif)}`,
+    `Data: ${data}`,
+    "─".repeat(58),"",
+    `NOTA FINAL: ${e.nota||0}/10`,
+    `${"─".repeat(30)}`,
+    `CRITÉRIOS:`,
+    critLines,"",
+    `RESUMO:`,e.resumo||"","",
+    `O QUE FEZ BEM:`,...(e.acertos||[]).map(a=>`  • ${a}`),"",
+    `O QUE MELHORAR:`,...(e.erros||[]).map(a=>`  • ${a}`),"",
+    `DICA PRINCIPAL:`,e.dica_principal||"","",
+    `COMO AGIR COM ESSE PERFIL:`,e.como_agir||"",
+    s.persona.isAI&&s.persona.sys?"
+─".repeat(30)+"
+PERFIL DA PERSONA (IA):
+"+s.persona.sys.replace(/REGRA ABSOLUTA.*$/s,"").replace(/CONTEXTO DA OFICINA.*$/s,"").trim():"",
+    "","═".repeat(58),`TRANSCRIÇÃO:`,"─".repeat(58),"",
+    ...(s.hist||[]).filter(m=>!m.content.startsWith("[cliente")).map(m=>[`${m.role==="user"?"VENDEDOR":"CLIENTE"}: ${m.content}`,""]).flat()
+  ].filter(l=>l!==null);
+  const nome=`relatorio_${s.persona.nome.toLowerCase().replace(/\s/g,"_")}_${s.id}.txt`;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([linhas.join("
+")],{type:"text/plain;charset=utf-8"}));
+  a.download=nome;a.click();
 }
 
 // UTILS
