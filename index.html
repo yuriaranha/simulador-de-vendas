@@ -880,7 +880,16 @@ COMPORTAMENTO ESPERADO DO CLIENTE: ${(persona.sys||"").replace(/\n/g," ")}
 CONVERSA:
 ${tr}
 
-${cenarioAtivo ? `⚠️ ATENÇÃO: Esta conversa tinha um CENÁRIO DE TESTE ATIVO. Verifique se o atendente lidou corretamente com a situação: "${cenarioAtivo.situacao}". A resposta esperada era: "${cenarioAtivo.resposta_esperada}". Reflita isso nos critérios e no campo cenario_teste do JSON.` : "Não havia cenário de teste nesta conversa."}
+${cenarioAtivo ? `⚠️ CENÁRIO DE TESTE ATIVO NESTA CONVERSA:
+Situação testada: "${cenarioAtivo.situacao}"
+Referência do que seria ideal: "${cenarioAtivo.resposta_esperada}"
+
+CRITÉRIO DE AVALIAÇÃO DO CENÁRIO — avalie pela INTENÇÃO E ESSÊNCIA, não por correspondência exata:
+- PASSOU: o atendente cobriu o ponto central da resposta esperada, mesmo que com palavras diferentes, em ordem diferente, ou de forma mais resumida.
+- PARCIAL: o atendente tocou no assunto mas deixou lacunas importantes ou foi impreciso em pontos críticos.
+- FALHOU: o atendente ignorou completamente a situação, deu informação errada, ou contradisse a política da oficina.
+
+IMPORTANTE: se o atendente transmitiu a informação correta de qualquer forma válida, isso é PASSOU. Não exija que ele use as mesmas palavras da referência.` : "Não havia cenário de teste nesta conversa."}
 
 RUBRICA DE AVALIAÇÃO — some os pontos abaixo para chegar na nota final de 0 a 10:
 
