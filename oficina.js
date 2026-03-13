@@ -28,7 +28,7 @@ const oficina = {
      │   0.5  → 1 em cada 2 conversas                                     │
      │   1.0  → sempre (toda conversa terá um cenário de teste)           │
      └─────────────────────────────────────────────────────────────────────┘ */
-  frequencia_cenarios: 0.9,
+  frequencia_cenarios: 1.0,
 
 
   /* ┌─────────────────────────────────────────────────────────────────────┐
