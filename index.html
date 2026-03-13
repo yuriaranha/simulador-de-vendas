@@ -759,7 +759,10 @@ async function oaiCall(msgs,isFirst){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:200,messages:[{role:"system",content:sysPrompt},...msgs]})
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:200,messages:[
+        {role:"system",content:sysPrompt},
+        ...(msgs.length ? msgs : [{role:"user",content:"[inicie]"}])
+      ]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||res.status);}
     const data=await res.json();
@@ -1231,6 +1234,6 @@ function show(id){["keyScreen","selectionScreen","chatScreen","evalScreen"].forE
 function hkey(e,ctx){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ctx==="coach"?enviarCoach():enviar();}}
 function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px";}
 </script>
-<div style="position:fixed;top:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none;z-index:9999">v1.3.1</div>
+<div style="position:fixed;top:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none;z-index:9999">v1.3.2</div>
 </body>
 </html>
