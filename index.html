@@ -603,7 +603,7 @@ async function gerarIA(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:700,
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:700,
         messages:[{role:"user",content:`Crie uma persona INÉDITA de cliente para uma OFICINA MECÂNICA premium brasileira.
 Nível: ${dl}. Seja criativo — evite clichês.
 
@@ -652,8 +652,7 @@ function iniciarChatP(p,isAI){
   chatSysPrompt = buildSysPrompt(persona);
   document.getElementById("inputBox").disabled=false;
   document.getElementById("inputBox").placeholder="Digite sua mensagem...";
-  // Send opening trigger as a hidden system nudge — never appears in chat history
-  oaiCall([],true);
+  oaiCall([{role:"user",content:"[cliente entrou na oficina]"}],true);
 }
 
 function buildSysPrompt(p){
@@ -752,22 +751,16 @@ async function oaiCall(msgs,isFirst){
   loading=true;document.getElementById("sendBtn").disabled=true;
   const tid=addTyping("messages");
   try{
-    const openingNudge = isFirst
-      ? "\n\nAGORA: Você acabou de entrar na oficina. Inicie a conversa como esse cliente faria — cumprimente e diga o motivo da visita. Seja natural e direto. Apenas essa frase de abertura, nada mais."
-      : "";
-    const sysPrompt = chatSysPrompt + openingNudge;
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:200,messages:[
-        {role:"system",content:sysPrompt},
-        ...(msgs.length ? msgs : [{role:"user",content:"[inicie]"}])
-      ]})
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:200,messages:[{role:"system",content:chatSysPrompt},...msgs]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||res.status);}
     const data=await res.json();
     const reply=data.choices?.[0]?.message?.content||"...";
     removeTyping(tid);addMsg(reply,"persona");
+    if(isFirst)hist.push({role:"user",content:"[cliente entrou na oficina]"});
     hist.push({role:"assistant",content:reply});
     // Detect if client left (check for goodbye signals)
     const lowerReply=reply.toLowerCase();
@@ -856,7 +849,7 @@ async function encerrar(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:1500,
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:1500,
         messages:[{role:"user",content:`Você é um avaliador rigoroso de atendimento em oficinas mecânicas. Avalie a conversa abaixo com critério real — um atendimento perfeito é raríssimo.
 
 OFICINA: ${oficina.nome}
@@ -992,7 +985,7 @@ async function enviarCoach(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:500,
+      body:JSON.stringify({model:"gpt-4o-mini",max_tokens:500,
         messages:[{role:"system",content:`Coach de vendas da ${oficina.nome}. Faz: ${oficina.faz.join(", ")}. NÃO faz: ${oficina.nao_faz.join(", ")}. Diferenciais: ${(oficina.diferenciais||[]).join(", ")}. Política de preço: ${oficina.politica_preco||""}. Português brasileiro. Prático e encorajador. Máx 4 frases.`},...coachHist]})
     });
     if(!res.ok)throw new Error(res.status);
@@ -1234,6 +1227,6 @@ function show(id){["keyScreen","selectionScreen","chatScreen","evalScreen"].forE
 function hkey(e,ctx){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ctx==="coach"?enviarCoach():enviar();}}
 function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px";}
 </script>
-<div style="position:fixed;top:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none;z-index:9999">v1.3.2</div>
+<div style="position:fixed;top:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none;z-index:9999">v1.3.3</div>
 </body>
 </html>
