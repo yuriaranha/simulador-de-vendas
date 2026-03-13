@@ -457,6 +457,7 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
 <script>
 let apiKey="",filtro="Todos",persona=null,hist=[],coachHist=[],evalData=null;
 let loading=false,coachLoading=false,difSel=null;
+let cenarioAtivo=null; // cenário de teste sorteado para a conversa atual
 
 // KEY
 function toggleEye(){const i=document.getElementById("apiKeyInput");i.type=i.type==="password"?"text":"password";}
@@ -609,8 +610,9 @@ function buildContexto(){
   const cens = (oficina.cenarios_teste||[]);
   const freq = typeof oficina.frequencia_cenarios === "number" ? oficina.frequencia_cenarios : 0.1;
   const ativarCenario = cens.length > 0 && Math.random() < freq;
-  // Pick one random cenario if activated
+  // Pick one random cenario if activated and store globally
   const cenarioEscolhido = ativarCenario ? cens[Math.floor(Math.random()*cens.length)] : null;
+  cenarioAtivo = cenarioEscolhido; // expose globally for eval/report
   return `
 CONTEXTO DA OFICINA: "${oficina.nome}"
 
@@ -690,7 +692,35 @@ function exportarConversa(){
 }
 function exportarRelatorio(){
   if(!evalData){alert("Aguarde a avaliação!");return;}
-  const l=[`RELATÓRIO — OFICINA PREMIUM`,"═".repeat(55),`Persona: ${persona.nome}, ${persona.apelido}${persona.id===9999?" (IA)":""}`,`Nível: ${persona.tag} | ${"●".repeat(persona.dif)}${"○".repeat(5-persona.dif)}`,`Data: ${new Date().toLocaleString("pt-BR")}`,"─".repeat(55),"",`NOTA: ${evalData.nota}/10`,"",`RESUMO:`,evalData.resumo,"",`O QUE FEZ BEM:`,...(evalData.acertos||[]).map(a=>`  • ${a}`),"",`O QUE MELHORAR:`,...(evalData.erros||[]).map(a=>`  • ${a}`),"",`DICA:`,evalData.dica_principal,"",`ESTRATÉGIA:`,evalData.como_agir,"","═".repeat(55),"TRANSCRIÇÃO:","─".repeat(55),"",...hist.map(m=>[`${m.role==="user"?"VENDEDOR":"CLIENTE"}: ${m.content}`,""]).flat()];
+  const e=evalData;
+  const crit=e.criterios||{}, just=e.justificativas||{};
+  const critNomes={recepcao:"Recepção & Rapport",escuta:"Escuta & Diagnóstico",servicos:"Gestão de Serviços",objecoes:"Manejo de Objeções",fechamento:"Encaminhamento & Fechamento"};
+  const critLines=Object.entries(critNomes).map(([k,v])=>`  ${v}: ${crit[k]||0}/2${just[k]?" — "+just[k]:""}`).join("\n");
+  const ct=e.cenario_teste||{};
+  const cenarioSection=ct.ativado?[
+    "","═".repeat(55),"CENÁRIO DE TESTE","─".repeat(55),
+    `Situação provocada: ${ct.descricao||""}`,
+    `Como o atendente reagiu: ${ct.como_atendente_reagiu||""}`,
+    `Resultado: ${ct.nota_cenario==="passou"?"✅ PASSOU":ct.nota_cenario==="falhou"?"❌ FALHOU":ct.nota_cenario==="parcial"?"⚠️ PARCIAL":"—"}`,
+  ]:["","(Nenhum cenário de teste foi ativado nesta sessão)"];
+  const l=[
+    `RELATÓRIO DE SIMULAÇÃO — ${oficina.nome}`,"═".repeat(55),
+    `Persona: ${persona.nome}, ${persona.apelido}${persona.id===9999?" (IA)":""}`,
+    `Nível: ${persona.tag} | ${"●".repeat(persona.dif)}${"○".repeat(5-persona.dif)}`,
+    `Data: ${new Date().toLocaleString("pt-BR")}`,
+    "─".repeat(55),"",
+    `NOTA FINAL: ${e.nota}/10`,
+    "─".repeat(30),"CRITÉRIOS:",critLines,
+    "","RESUMO:",e.resumo||"",
+    "","O QUE FEZ BEM:",...(e.acertos||[]).map(a=>`  • ${a}`),
+    "","O QUE MELHORAR:",...(e.erros||[]).map(a=>`  • ${a}`),
+    "","DICA PRINCIPAL:",e.dica_principal||"",
+    "","ESTRATÉGIA COM ESSE PERFIL:",e.como_agir||"",
+    ...cenarioSection,
+    e.resumo_cliente?["","═".repeat(55),"PERFIL DESTE TIPO DE CLIENTE (para aprendizado)","─".repeat(55),e.resumo_cliente].join("\n"):"",
+    "","═".repeat(55),"TRANSCRIÇÃO:","─".repeat(55),"",
+    ...hist.filter(m=>!m.content.startsWith("[cliente")).map(m=>[`${m.role==="user"?"VENDEDOR":"CLIENTE"}: ${m.content}`,""]).flat()
+  ].filter(x=>x!==null&&x!==undefined);
   dl(l.join("\n"),`relatorio_${persona.nome.toLowerCase().replace(/\s/g,"_")}_${Date.now()}.txt`);
 }
 function dl(txt,nome){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain;charset=utf-8"}));a.download=nome;a.click();}
@@ -715,12 +745,14 @@ SERVIÇOS QUE NÃO FAZ: ${oficina.nao_faz.join(", ")}
 POLÍTICAS: ${(oficina.politicas||[]).map(p=>p.regra).join(" | ")}
 DIFERENCIAIS: ${(oficina.diferenciais||[]).join(", ")}
 POLÍTICA DE PREÇO: ${oficina.politica_preco||""}
-CENÁRIOS TESTADOS: ${(oficina.cenarios_teste||[]).map((c,i)=>(i+1)+". "+c.situacao+" → esperado: "+c.resposta_esperada).join(" | ")}
+CENÁRIO DE TESTE ATIVO NESTA CONVERSA: ${cenarioAtivo ? `SIM — "${cenarioAtivo.situacao}" | Resposta esperada: "${cenarioAtivo.resposta_esperada}"` : "NÃO — nenhum cenário de teste foi ativado nesta conversa."}
 PERFIL DO CLIENTE: ${persona.nome} — ${persona.apelido} (${persona.tag}, dificuldade ${persona.dif}/5)
 COMPORTAMENTO ESPERADO DO CLIENTE: ${persona.sys}
 
 CONVERSA:
 ${tr}
+
+${cenarioAtivo ? `⚠️ ATENÇÃO: Esta conversa tinha um CENÁRIO DE TESTE ATIVO. Verifique se o atendente lidou corretamente com a situação: "${cenarioAtivo.situacao}". A resposta esperada era: "${cenarioAtivo.resposta_esperada}". Reflita isso nos critérios e no campo cenario_teste do JSON.` : "Não havia cenário de teste nesta conversa."}
 
 RUBRICA DE AVALIAÇÃO — some os pontos abaixo para chegar na nota final de 0 a 10:
 
@@ -759,7 +791,7 @@ ESCALA DE REFERÊNCIA:
 Seja HONESTO e RIGOROSO. Não infle a nota. Se o vendedor não fez algo, não dê o ponto.
 
 Responda APENAS com JSON válido sem markdown:
-{"nota": 0, "criterios": {"recepcao": 0, "escuta": 0, "servicos": 0, "objecoes": 0, "fechamento": 0}, "justificativas": {"recepcao": "", "escuta": "", "servicos": "", "objecoes": "", "fechamento": ""}, "resumo": "", "acertos": [], "erros": [], "dica_principal": "", "como_agir": ""}`}]})
+{"nota": 0, "criterios": {"recepcao": 0, "escuta": 0, "servicos": 0, "objecoes": 0, "fechamento": 0}, "justificativas": {"recepcao": "", "escuta": "", "servicos": "", "objecoes": "", "fechamento": ""}, "resumo": "", "acertos": [], "erros": [], "dica_principal": "", "como_agir": "", "resumo_cliente": "2-3 frases descrevendo o perfil e comportamento deste tipo de cliente de forma genérica, para aprendizado — sem revelar o nome ou detalhes internos da persona", "cenario_teste": {"ativado": false, "descricao": "", "como_atendente_reagiu": "", "nota_cenario": "passou|falhou|parcial|nao_ocorreu"}}`}]})
     });
     if(!res.ok)throw new Error(res.status);
     const data=await res.json();
@@ -816,6 +848,8 @@ function renderEval(e){
     ${e.erros?.length?`<div class="esec"><div class="esec-t">⚠️ O que melhorar</div><ul>${e.erros.map(a=>`<li>${a}</li>`).join("")}</ul></div>`:""}
     <div class="esec"><div class="esec-t">💡 Dica principal</div><p>${e.dica_principal}</p></div>
     <div class="esec"><div class="esec-t">🎯 Como agir com esse perfil</div><p>${e.como_agir}</p></div>
+    ${e.resumo_cliente?`<div class="esec" style="border-left:2px solid #e8b84b33;padding-left:12px"><div class="esec-t" style="color:#e8b84b88">🧠 Perfil deste tipo de cliente</div><p style="font-size:11px;color:#aaa;line-height:1.7">${e.resumo_cliente}</p></div>`:""}
+    ${e.cenario_teste?.ativado?`<div class="esec" style="border:1px solid ${e.cenario_teste.nota_cenario==="passou"?"#4ecb7133":e.cenario_teste.nota_cenario==="falhou"?"#e84b4b33":"#e8a84b33"};border-radius:8px;padding:12px"><div class="esec-t">🎯 Cenário de Teste</div><p style="font-size:11px;color:#bbb;margin-bottom:6px"><strong>Situação:</strong> ${e.cenario_teste.descricao}</p><p style="font-size:11px;color:#bbb;margin-bottom:6px"><strong>Como o atendente reagiu:</strong> ${e.cenario_teste.como_atendente_reagiu}</p><span style="font-size:10px;padding:2px 10px;border-radius:6px;background:${e.cenario_teste.nota_cenario==="passou"?"#0f2a0f;color:#4ecb71":e.cenario_teste.nota_cenario==="falhou"?"#2a0f0f;color:#e84b4b":"#1a1500;color:#e8b84b"}">${e.cenario_teste.nota_cenario==="passou"?"✅ Passou":"passou"===e.cenario_teste.nota_cenario?"✅ Passou":e.cenario_teste.nota_cenario==="falhou"?"❌ Falhou":e.cenario_teste.nota_cenario==="parcial"?"⚠️ Parcial":"—"}</span></div>`:""}
     <button class="btn-exp-eval" onclick="exportarRelatorio()">⬇ Exportar Relatório</button>
     <div class="eval-btns">
       ${isAI?`<button class="btn-sec" onclick="abrirModal('modalIA')">✨ Nova persona IA</button>`:`<button class="btn-sec" onclick="iniciarChat(${persona.id})">↺ Repetir</button>`}
@@ -862,6 +896,7 @@ function salvarHistorico(){
     date:new Date().toISOString(),
     persona:{emoji:persona.emoji,nome:persona.nome,apelido:persona.apelido,idade:persona.idade,tag:persona.tag,dif:persona.dif,cor:persona.cor,dest:persona.dest,isAI:persona.id===9999,sys:persona.sys||""},
     eval:evalData,
+    cenarioAtivo:cenarioAtivo,
     hist:[...hist],
     coachHist:[...coachHist]
   });
@@ -1076,5 +1111,6 @@ function show(id){["keyScreen","selectionScreen","chatScreen","evalScreen"].forE
 function hkey(e,ctx){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ctx==="coach"?enviarCoach():enviar();}}
 function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px";}
 </script>
+<div style="position:fixed;bottom:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none">v1.0.0</div>
 </body>
 </html>
