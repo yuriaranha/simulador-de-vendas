@@ -995,6 +995,7 @@ async function enviarCoach(){
     el.innerHTML+=`<div class="cmsg"><div class="cav">🎓</div><div class="cbub">${reply}</div></div>`;
     el.scrollTop=99999;
     coachHist.push({role:"assistant",content:reply});
+    try{const ss=JSON.parse(localStorage.getItem("hist_oficina")||"[]");if(ss.length>0){ss[0].coachHist=[...coachHist];localStorage.setItem("hist_oficina",JSON.stringify(ss));}}catch(_){}
   }catch(e){removeTyping(tid);el.innerHTML+=`<div class="cmsg"><div class="cav">🎓</div><div class="cbub" style="color:#e84b4b">⚠️ Erro.</div></div>`;}
   coachLoading=false;document.getElementById("coachSend").disabled=false;
 }
