@@ -603,7 +603,7 @@ async function gerarIA(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_tokens:700,
+      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:700,
         messages:[{role:"user",content:`Crie uma persona INÉDITA de cliente para uma OFICINA MECÂNICA premium brasileira.
 Nível: ${dl}. Seja criativo — evite clichês.
 
@@ -759,7 +759,7 @@ async function oaiCall(msgs,isFirst){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_tokens:200,messages:[
+      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:200,messages:[
         {role:"system",content:sysPrompt},
         ...(msgs.length ? msgs : [{role:"user",content:"[inicie]"}])
       ]})
@@ -856,7 +856,7 @@ async function encerrar(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_tokens:1500,
+      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:1500,
         messages:[{role:"user",content:`Você é um avaliador rigoroso de atendimento em oficinas mecânicas. Avalie a conversa abaixo com critério real — um atendimento perfeito é raríssimo.
 
 OFICINA: ${oficina.nome}
@@ -992,7 +992,7 @@ async function enviarCoach(){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
-      body:JSON.stringify({model:"gpt-5-mini",max_tokens:500,
+      body:JSON.stringify({model:"gpt-5-mini",max_completion_tokens:500,
         messages:[{role:"system",content:`Coach de vendas da ${oficina.nome}. Faz: ${oficina.faz.join(", ")}. NÃO faz: ${oficina.nao_faz.join(", ")}. Diferenciais: ${(oficina.diferenciais||[]).join(", ")}. Política de preço: ${oficina.politica_preco||""}. Português brasileiro. Prático e encorajador. Máx 4 frases.`},...coachHist]})
     });
     if(!res.ok)throw new Error(res.status);
