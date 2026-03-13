@@ -458,6 +458,7 @@ body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-
 let apiKey="",filtro="Todos",persona=null,hist=[],coachHist=[],evalData=null;
 let loading=false,coachLoading=false,difSel=null;
 let cenarioAtivo=null; // cenário de teste sorteado para a conversa atual
+let chatSysPrompt=""; // built once at chat start, reused for every message
 
 // KEY
 function toggleEye(){const i=document.getElementById("apiKeyInput");i.type=i.type==="password"?"text":"password";}
@@ -585,15 +586,45 @@ function iniciarChatP(p,isAI){
   const av=document.getElementById("chatAv");
   av.textContent=persona.emoji;av.style.background=persona.cor;av.style.borderColor=persona.dest;
   document.getElementById("chatNm").textContent=`${persona.nome}, ${persona.apelido}`;
-  document.getElementById("chatDs").textContent=`${persona.idade} · ${persona.tag} · ${"●".repeat(persona.dif)}${"○".repeat(5-persona.dif)}${isAI?" · ✨ IA":""}`;
+  document.getElementById("chatDs").textContent=`${persona.idade||""} · ${persona.tag} · ${"●".repeat(persona.dif)}${"○".repeat(5-persona.dif)}${isAI?" · ✨ IA":""}`;
   document.getElementById("messages").innerHTML=isAI
     ?`<div class="ai-hint">Persona <strong>${persona.nome}</strong> criada pela IA · Nível: <em>${persona.tag}</em><br/>Responda como vendedor da oficina. Clique em <strong>⚑ Avaliar</strong> quando terminar.</div>`
     :`<div class="hint-bar">Atendendo <strong>${persona.nome}</strong>. Responda como vendedor. Clique em <strong>⚑ Avaliar</strong> quando terminar.</div>`;
-  // Primeira mensagem: instrui o cliente a abrir a conversa naturalmente
-  const primeiraMsg = `Você acabou de entrar na oficina. Abra a conversa como esse cliente faria na vida real: cumprimente e diga o motivo da visita (problema no carro, pedido de orçamento, revisão, etc.). Seja direto e natural. Não quebre o personagem.`;
+  // Build sys prompt ONCE — prevents random re-rolling on every message
+  chatSysPrompt = buildSysPrompt(persona);
+  // Primeira mensagem
+  const primeiraMsg = `Você acabou de entrar na oficina. Abra a conversa como esse cliente faria na vida real: cumprimente e diga o motivo da visita. Seja direto e natural.`;
   document.getElementById("inputBox").disabled=false;
   document.getElementById("inputBox").placeholder="Digite sua mensagem...";
   oaiCall([{role:"user",content:primeiraMsg}],true);
+}
+
+function buildSysPrompt(p){
+  const ctx = buildContexto(); // this sets cenarioAtivo
+  const cenarioPart = cenarioAtivo ? `
+
+MISSÃO DE TESTE (execute UMA VEZ, naturalmente):
+Em algum momento da conversa, introduza organicamente: "${cenarioAtivo.situacao}"
+Faça isso como um cliente real faria — sem anunciar. Só uma vez. Depois volte ao assunto principal.` : "";
+
+  return `VOCÊ É UM CLIENTE — não um assistente, não um vendedor.
+Seu nome é ${p.nome}. Você está numa oficina mecânica chamada "${oficina.nome}".
+
+QUEM VOCÊ É:
+${p.sys}
+
+CONTEXTO DA OFICINA (seu conhecimento de fundo como cliente):
+- Esta oficina FAZ: ${oficina.faz.join(", ")}
+- Esta oficina NÃO FAZ: ${oficina.nao_faz.join(", ")}
+- Pagamento: ${oficina.pagamento||""}
+${cenarioPart}
+
+REGRAS ABSOLUTAS:
+1. Você é o CLIENTE. O humano que está digitando é o ATENDENTE da oficina.
+2. NUNCA ofereça ajuda. NUNCA aja como assistente. NUNCA quebre o personagem.
+3. Responda como esse cliente responderia na vida real — com emoção, hesitação, impaciência, ou carinho, conforme seu perfil.
+4. Se o atendimento for ruim, vá embora. Clientes reais vão embora.
+5. Máx 3 frases por resposta. Português brasileiro natural.`.trim();
 }
 
 async function enviar(){
@@ -649,10 +680,7 @@ async function oaiCall(msgs,isFirst){
   loading=true;document.getElementById("sendBtn").disabled=true;
   const tid=addTyping("messages");
   try{
-    const ctx = buildContexto();
-    const sysPrompt = persona.id===9999
-      ? persona.sys + "\n\n" + ctx + "\n\nCONTEXTO DO ROLEPLAY: Você está nesta oficina. O atendente vai falar com você. Fique no personagem de CLIENTE durante toda a conversa. NUNCA ofereça ajuda, NUNCA aja como assistente."
-      : persona.sys + "\n\n" + ctx;
+    const sysPrompt = chatSysPrompt;
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
@@ -999,6 +1027,9 @@ function continuarPendente(id){
     }
   });
   el.scrollTop=99999;
+  // Rebuild sysPrompt for resumed conversation
+  chatSysPrompt = buildSysPrompt(persona);
+  if(s.cenarioAtivo) cenarioAtivo = s.cenarioAtivo;
 }
 
 function descartarPendente(id){
@@ -1126,6 +1157,6 @@ function show(id){["keyScreen","selectionScreen","chatScreen","evalScreen"].forE
 function hkey(e,ctx){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ctx==="coach"?enviarCoach():enviar();}}
 function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px";}
 </script>
-<div style="position:fixed;top:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none;z-index:9999">v1.1.0</div>
+<div style="position:fixed;top:10px;right:12px;font-size:9px;color:#333;font-family:'DM Mono',monospace;letter-spacing:1px;user-select:none;pointer-events:none;z-index:9999">v1.2.0</div>
 </body>
 </html>
