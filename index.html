@@ -650,8 +650,8 @@ function iniciarChatP(p,isAI){
     :`<div class="hint-bar">Atendendo <strong>${persona.nome}</strong>. Responda como vendedor. Clique em <strong>⚑ Avaliar</strong> quando terminar.</div>`;
   // Build sys prompt ONCE — prevents random re-rolling on every message
   chatSysPrompt = buildSysPrompt(persona);
-  document.getElementById("inputBox").disabled=false;
-  document.getElementById("inputBox").placeholder="Digite sua mensagem...";
+  document.getElementById("msgInput").disabled=false;
+  document.getElementById("msgInput").placeholder="Digite sua mensagem...";
   oaiCall([{role:"user",content:"[cliente entrou na oficina]"}],true);
 }
 
@@ -770,9 +770,9 @@ async function oaiCall(msgs,isFirst){
         const msgEl=document.getElementById("messages");
         msgEl.innerHTML+=`<div style="text-align:center;margin:16px 0"><div style="display:inline-block;background:#1a0a0a;border:1px solid #e84b4b33;border-radius:8px;padding:8px 16px;font-size:10px;color:#e84b4b;letter-spacing:1px">⚠️ ${persona.nome} encerrou a conversa</div></div><div style="text-align:center;margin-bottom:8px"><button onclick="encerrar()" style="background:#1a1500;border:1px solid #e8b84b44;border-radius:8px;padding:8px 20px;font-size:11px;color:#e8b84b;cursor:pointer;font-family:inherit;letter-spacing:1px">📊 Avaliar este atendimento →</button></div>`;
         msgEl.scrollTop=99999;
-        document.getElementById("inputBox").disabled=true;
+        document.getElementById("msgInput").disabled=true;
         document.getElementById("sendBtn").disabled=true;
-        document.getElementById("inputBox").placeholder="Cliente foi embora — avalie o atendimento";
+        document.getElementById("msgInput").placeholder="Cliente foi embora — avalie o atendimento";
       },600);
     }
   }catch(e){removeTyping(tid);addMsg(`⚠️ Erro: ${e.message}`,"persona");}
@@ -1097,6 +1097,9 @@ function continuarPendente(id){
     }
   });
   el.scrollTop=99999;
+  document.getElementById("msgInput").disabled=false;
+  document.getElementById("msgInput").placeholder="Digite sua mensagem...";
+  document.getElementById("sendBtn").disabled=false;
   // Rebuild sysPrompt for resumed conversation
   chatSysPrompt = buildSysPrompt(persona);
   if(s.cenarioAtivo) cenarioAtivo = s.cenarioAtivo;
