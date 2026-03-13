@@ -605,31 +605,39 @@ function buildContexto(){
   const faz = oficina.faz.map(s=>`  ✅ ${s}`).join("\n");
   const naoFaz = oficina.nao_faz.map(s=>`  ❌ ${s}`).join("\n");
   const difs = (oficina.diferenciais||[]).map(s=>`  ⭐ ${s}`).join("\n");
+  const pols = (oficina.politicas||[]).map((p,i)=>`  ${i+1}. ${p.regra}`).join("\n");
+  const cens = (oficina.cenarios_teste||[]);
+  const freq = typeof oficina.frequencia_cenarios === "number" ? oficina.frequencia_cenarios : 0.1;
+  const ativarCenario = cens.length > 0 && Math.random() < freq;
+  // Pick one random cenario if activated
+  const cenarioEscolhido = ativarCenario ? cens[Math.floor(Math.random()*cens.length)] : null;
   return `
 CONTEXTO DA OFICINA: "${oficina.nome}"
 
-O QUE ESTA OFICINA FAZ:
+SERVIÇOS QUE FAZ:
 ${faz}
 
-O QUE ESTA OFICINA NÃO FAZ (nunca preste esses serviços se perguntado):
+SERVIÇOS QUE NÃO FAZ:
 ${naoFaz}
 
-DIFERENCIAIS DA OFICINA:
+POLÍTICAS DA OFICINA (regras que o cliente pode testar):
+${pols}
+
+DIFERENCIAIS:
 ${difs}
 
 PRAZO MÉDIO: ${oficina.prazo_medio||"Combinado com o cliente."}
-
 PAGAMENTO: ${oficina.pagamento||"Não informado."}
-
 OBSERVAÇÕES: ${oficina.observacoes||""}
 
-IMPORTANTE PARA O ROLEPLAY:
-- De vez em quando peça um serviço que a oficina NÃO faz. Faça isso naturalmente, sem avisar. Reaja conforme seu perfil ao ouvir a negativa.
-${(oficina.cenarios_teste||[]).length ? `
-- SITUAÇÕES DE TESTE que você deve provocar naturalmente durante a conversa (escolha 1 ou 2 conforme o momento):
-${(oficina.cenarios_teste||[]).map((c,i)=>`  ${i+1}. ${c.situacao} — espera-se que o atendente: ${c.resposta_esperada}`).join("\n")}
-
-Introduza essas situações de forma orgânica, como um cliente real faria. Nunca anuncie que é um teste.` : ""}
+INSTRUÇÕES PARA O ROLEPLAY:
+- Você é um CLIENTE. Nunca quebre esse papel.
+- Foque na sua visita principal (o motivo pelo qual veio à oficina).
+${cenarioEscolhido ? `
+- SITUAÇÃO DE TESTE ATIVA NESTA CONVERSA: Em algum momento natural da conversa, provoque a seguinte situação (sem anunciar que é um teste):
+  "${cenarioEscolhido.situacao}"
+  Introduza isso organicamente, como um cliente real faria. Reaja conforme seu perfil à resposta do atendente.` : `
+- Nesta conversa, foque apenas no motivo principal da sua visita. Não provoque situações de teste.`}
 `.trim();
 }
 
@@ -704,8 +712,10 @@ async function encerrar(){
 OFICINA: ${oficina.nome}
 SERVIÇOS QUE FAZ: ${oficina.faz.join(", ")}
 SERVIÇOS QUE NÃO FAZ: ${oficina.nao_faz.join(", ")}
+POLÍTICAS: ${(oficina.politicas||[]).map(p=>p.regra).join(" | ")}
 DIFERENCIAIS: ${(oficina.diferenciais||[]).join(", ")}
 POLÍTICA DE PREÇO: ${oficina.politica_preco||""}
+CENÁRIOS TESTADOS: ${(oficina.cenarios_teste||[]).map((c,i)=>(i+1)+". "+c.situacao+" → esperado: "+c.resposta_esperada).join(" | ")}
 PERFIL DO CLIENTE: ${persona.nome} — ${persona.apelido} (${persona.tag}, dificuldade ${persona.dif}/5)
 COMPORTAMENTO ESPERADO DO CLIENTE: ${persona.sys}
 
