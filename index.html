@@ -870,7 +870,7 @@ DIFERENCIAIS: ${(oficina.diferenciais||[]).join(", ")}
 POLÍTICA DE PREÇO: ${oficina.politica_preco||""}
 CENÁRIO DE TESTE ATIVO NESTA CONVERSA: ${cenarioAtivo ? `SIM — "${cenarioAtivo.situacao}" | Resposta esperada: "${cenarioAtivo.resposta_esperada}"` : "NÃO — nenhum cenário de teste foi ativado nesta conversa."}
 PERFIL DO CLIENTE: ${persona.nome} — ${persona.apelido} (${persona.tag}, dificuldade ${persona.dif}/5)
-COMPORTAMENTO ESPERADO DO CLIENTE: ${persona.sys}
+COMPORTAMENTO ESPERADO DO CLIENTE: ${(persona.sys||"").replace(/\n/g," ")}
 
 CONVERSA:
 ${tr}
@@ -920,7 +920,9 @@ Responda APENAS com JSON válido sem markdown:
     const data=await res.json();
     let txt=data.choices?.[0]?.message?.content||"{}";
     txt=txt.replace(/```json|```/g,"").trim();
-    evalData=JSON.parse(txt);
+    const m=txt.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error("JSON não encontrado na resposta");
+    evalData=JSON.parse(m[0]);
     renderEval(evalData);salvarHistorico();
     coachHist=[
       {role:"user",content:`Contexto coach: conversa com "${persona.nome}" (${persona.tag}, dif ${persona.dif}/5${persona.id===9999?", IA":""}).Perfil: ${persona.sys}. Transcrição: ${tr}. Avaliação: ${JSON.stringify(evalData)}. Responda em pt-BR de forma prática sobre vendas em oficina premium.`},
